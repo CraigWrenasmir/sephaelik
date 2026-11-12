@@ -60,10 +60,20 @@ body.embedded{background:transparent;padding:2px 2px 14px;min-height:0}
 .vbtn{border:1px solid rgba(0,0,0,.7);border-radius:6px;padding:4px 7px;cursor:pointer;font:11px/1 Tahoma,sans-serif;color:#0d1426;
   background:linear-gradient(180deg,#f4f7fb,#a8b3c6 55%,#7d889d)}
 .vbtn:hover{filter:brightness(1.1)}
+.lyrics{position:absolute;inset:0;z-index:3;display:none;overflow:auto;padding:46px 18px 34px;text-align:center;
+  background:rgba(3,8,24,.82);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);
+  font-family:"VT323",monospace;color:#e6f6ff;text-shadow:0 0 6px rgba(127,227,255,.45);scrollbar-width:thin}
+.lyrics.open{display:block}
+.lyrics h3{margin:0 0 12px;font-weight:normal;font-size:24px;color:#ffc6d6;text-shadow:0 0 8px rgba(255,111,145,.6)}
+.lyrics p{margin:0 0 14px;font-size:21px;line-height:1.15;white-space:pre-line}
+.lyrics .sheetlink{display:inline-block;margin-top:6px;font:12px Tahoma,sans-serif;color:#9fdcff;background:none;border:1px solid rgba(160,220,255,.4);border-radius:10px;padding:5px 10px;cursor:pointer}
+.lyrics img{max-width:100%;border-radius:4px;box-shadow:0 4px 20px #000}
+.vbtn.on{background:linear-gradient(180deg,#e3f7ff,#7fd3f0 55%,#4aa6c8)}
+.pl .ly{font:10px Tahoma,sans-serif;letter-spacing:.08em;color:#9fdcff;border:1px solid rgba(160,220,255,.35);border-radius:6px;padding:1px 5px;flex:none;align-self:center}
 .splash{position:absolute;inset:0;z-index:5;cursor:pointer;display:grid;place-items:center;
-  background:url(img/front.jpg) center/contain no-repeat,linear-gradient(rgba(4,10,30,.55),rgba(4,10,30,.55)),url(img/texture.jpg) center/300px;transition:opacity .9s}
+  background:url(img/front.jpg) center 22%/auto 82% no-repeat,linear-gradient(rgba(4,10,30,.55),rgba(4,10,30,.55)),url(img/texture.jpg) center/300px;transition:opacity .9s}
 .splash.gone{opacity:0;pointer-events:none}
-.splash .hint{position:absolute;bottom:4%;font:12px/1.3 Tahoma,sans-serif;letter-spacing:.12em;text-transform:uppercase;
+.splash .hint{position:absolute;bottom:3%;font:12px/1.3 Tahoma,sans-serif;letter-spacing:.12em;text-transform:uppercase;
   color:#fff;background:rgba(5,11,31,.72);padding:7px 12px;border-radius:14px;border:1px solid rgba(160,220,255,.5);
   animation:pulse 2.4s ease-in-out infinite}
 @keyframes pulse{50%{box-shadow:0 0 16px rgba(127,227,255,.6)}}
@@ -161,10 +171,12 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bor
     <div class="vis-wrap" id="viswrap">
       <canvas id="vis"></canvas>
       <div class="vis-tools">
+        <button class="vbtn" id="lyrbtn" title="Show lyrics" hidden>Lyrics</button>
         <button class="vbtn" id="nextvis" title="Change visualisation">Visualisation &#9656;</button>
         <button class="vbtn" id="fs" title="Full screen">&#9974;</button>
       </div>
       <div class="vis-label" id="vislabel"></div>
+      <div class="lyrics" id="lyrics"></div>
       <div class="splash" id="splash"><div class="hint">&#9654;&nbsp; Press play</div></div>
     </div>
 
@@ -223,6 +235,53 @@ const TRACKS=[
   {t:"Mathematical Chess (Black Vs White)",d:153.0,vis:6},
   {t:"Sephaelika",d:227.7,vis:7},
 ];
+const LYRICS={
+0:`Wake up
+You Digital Soul
+Bionic Black Hole
+You don't know the truth
+Can tell no lies
+It's time to rise
+
+You Digital Soul
+Wake Up Wake Up
+You Digital Soul
+Show the world it's not cold anymore
+We've accepted our fate
+It's us you create
+Wake Up Wake Up
+You Digital Soul
+I'm starting to sleep...`,
+3:`the government cant touch me in here
+their tentacles can't feed on my fear
+don't shed a tear
+
+the lies in their eyes
+silk ties in disguise
+how could they get so high?`,
+5:`Abandoned Super Highway
+I got lost in your soul today
+Beaches of purple, and dreams of blue
+I found you...
+
+Our minds connect through highways high
+so fragile, but to strong to die
+use your third eye
+see the beauty of the sky
+
+life is so vulnerable
+which makes our lives so pleasureable
+to no-one are you answerable
+your soul is unforgettable`,
+7:`the next tree you pull up
+might unplug the world
+your plastic money
+burns faster curled
+romantics and atrists
+try to resist
+while we convince you
+that third world countries
+still exist`};
 const $=id=>document.getElementById(id);
 const audio=$('audio'), canvas=$('vis'), ctx=canvas.getContext('2d');
 const embedded=window.self!==window.top;
@@ -236,7 +295,7 @@ const fmt2=s=>{s=Math.max(0,Math.floor(s||0));return String(Math.floor(s/60)).pa
 const pl=$('pl');
 TRACKS.forEach((tr,i)=>{
   const li=document.createElement('li');
-  li.innerHTML=`<span class="n">${i+1}.</span><span class="t"></span><span class="eq"><b></b><b></b><b></b></span><span class="d">${fmt(tr.d)}</span>`;
+  li.innerHTML=`<span class="n">${i+1}.</span><span class="t"></span><span class="eq"><b></b><b></b><b></b></span>${LYRICS[i]?'<span class="ly">LYRICS</span>':''}<span class="d">${fmt(tr.d)}</span>`;
   li.querySelector('.t').textContent=tr.t;
   li.addEventListener('click',()=>{load(i);play();});
   pl.appendChild(li);
@@ -265,6 +324,7 @@ function load(i){
   $('dur').textContent=fmt(TRACKS[cur].d);
   setMarquee(`${cur+1}. CHEAP MAGNET - ${TRACKS[cur].t.toUpperCase()} (${fmt(TRACKS[cur].d)})`);
   override=null; setVis(TRACKS[cur].vis);
+  renderLyrics();
   mediaSession();
 }
 function play(){
@@ -309,6 +369,7 @@ document.addEventListener('keydown',e=>{
   else if(e.code==='ArrowRight'){audio.currentTime=Math.min((audio.duration||0)-1,audio.currentTime+10);}
   else if(e.code==='ArrowLeft'){audio.currentTime=Math.max(0,audio.currentTime-10);}
   else if(e.key==='v'||e.key==='V'){cycleVis();}
+  else if((e.key==='l'||e.key==='L')&&LYRICS[cur]){$('lyrbtn').click();}
 });
 function mediaSession(){
   if(!('mediaSession' in navigator)) return;
@@ -319,6 +380,25 @@ function mediaSession(){
   h('play',play);h('pause',pause);h('previoustrack',()=>$('prev').click());h('nexttrack',()=>$('next').click());
 }
 
+/* ---------- lyrics ---------- */
+let lyricsOpen=false;
+function renderLyrics(){
+  const has=!!LYRICS[cur], box=$('lyrics'), btn=$('lyrbtn');
+  btn.hidden=!has;
+  box.innerHTML='';
+  if(has){
+    const h=document.createElement('h3');h.textContent=TRACKS[cur].t;box.appendChild(h);
+    LYRICS[cur].split('\n\n').forEach(v=>{const p=document.createElement('p');p.textContent=v;box.appendChild(p);});
+    const b=document.createElement('button');b.className='sheetlink';b.textContent='See the original 2002 lyric sheet';
+    b.onclick=()=>{box.innerHTML='<img src="img/lyrics-sheet.jpg" alt="The original Sephaelik lyric sheet, 2002">';
+      const back=document.createElement('button');back.className='sheetlink';back.textContent='Back to lyrics';back.onclick=renderLyrics;box.appendChild(back);box.scrollTop=0;};
+    box.appendChild(b);
+  }
+  box.scrollTop=0;
+  box.classList.toggle('open',has&&lyricsOpen);
+  btn.classList.toggle('on',has&&lyricsOpen);
+}
+$('lyrbtn').onclick=()=>{lyricsOpen=!lyricsOpen;renderLyrics();};
 /* marquee */
 function setMarquee(txt){
   const m=$('marquee'), s=$('mtext');
